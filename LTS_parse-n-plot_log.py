@@ -63,7 +63,7 @@ if __name__ == "__main__":
         if file.endswith(".log") : listlogfiles.append(file)
     if len(listlogfiles)==1: logfile = listlogfiles[1]
     else:
-        print('\nwhich vector file?')
+        print('\nwhich log file?')
         for n in range(len(listlogfiles)):
             print('   {}:{}'.format(n,listlogfiles[n]))
     logfile = listlogfiles[int(input())]
