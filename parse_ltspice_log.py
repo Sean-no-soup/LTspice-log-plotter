@@ -73,9 +73,11 @@ if __name__ == "__main__":
 
     #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     #setup some plot stuff
-    fig = plt.figure()
+    fig = plt.figure(figsize=(18, 12), dpi=80)
     ax = plt.axes(projection='3d')
+    ax.set_proj_type('ortho')  #persp, ortho
     ax.set_title('generic toad')
+    plt.subplots_adjust(bottom=0)
     xscale = 'linear'
     yscale = 'log'
     zscale = 'linear'
@@ -114,7 +116,7 @@ if __name__ == "__main__":
 
         #reset tick labels
         getattr(ax, f'set_{axis}ticks')(tick_locs) #makes matplotlib happy
-        getattr(ax, f'set_{axis}ticklabels')(tick_labels)
+        getattr(ax, f'set_{axis}ticklabels')(tick_labels)#,rotation=10)
 
     global meas_lists, meas_lists_names, step_lists, step_lists_names
     log_parser(logfilepath)
