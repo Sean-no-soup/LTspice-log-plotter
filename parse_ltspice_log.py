@@ -73,15 +73,32 @@ if __name__ == "__main__":
 
     #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     #setup some plot stuff
-    fig = plt.figure(figsize=(18, 12), dpi=80)
+    fig = plt.figure(figsize=(16, 12), dpi=80)
     ax = plt.axes(projection='3d')
-    ax.set_proj_type('ortho')  #persp, ortho
+    ax.set_proj_type('ortho')  #persp, ortho (iso), 
     ax.set_title('generic toad')
     plt.subplots_adjust(bottom=0)
-    xscale = 'linear'
-    yscale = 'log'
-    zscale = 'linear'
     #linear or log, matplotlib axis scale workaround (and it's been a known issue in 3d for 13+years)
+    xscale = 'log'
+    yscale = 'linear'
+    zscale = 'linear'
+    #when to use scientific vs positional representation for readability
+    def log_use_scientific(number):   return (number <= -4 or number >= 6)
+    def lin_use_scientific(number):   return (number <= -(10**6) or number >= (10**6))
+
+    #scientific representations
+    def log_format_scientific(number):
+        return np.format_float_scientific(10**number,precision=1,unique=True,trim='-',sign=False)
+    def lin_format_scientific(number):
+        return np.format_float_scientific(    number,precision=1,unique=True,trim='-',sign=False)
+
+    #positional representations 
+    def log_format_positional(number):
+        number = np.float64(np.format_float_scientific(10**number,precision=2)) #limiting sig figures to 3 rather than using precision (which just clips decimal places)
+        return np.format_float_positional(number,unique=True,trim='-',sign=False)
+    def lin_format_positional(number):
+        number = np.float64(np.format_float_scientific(    number,precision=2)) #limiting sig figures to 3 rather than using precision (which just clips decimal places)
+        return np.format_float_positional(number,unique=True,trim='-',sign=False)
     #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     def setup_grid(dataset,scale):
@@ -89,14 +106,7 @@ if __name__ == "__main__":
         elif scale == 'linear':return dataset.reshape(xy_shape)
         else: raise ValueError(f'invalid scale {scale}')
 
-    def log_format_scientific(number):return np.format_float_scientific(10**number,precision=3,unique=True,trim='-',sign=False)
-    def log_format_positional(number):return np.format_float_positional(10**number,precision=3,unique=True,trim='-',sign=False)
-    def lin_format_scientific(number):return np.format_float_scientific(    number,precision=3,unique=True,trim='-',sign=False)
-    def lin_format_positional(number):return np.format_float_positional(    number,precision=3,unique=True,trim='-',sign=False)
-    def log_use_scientific(number):return (number <= -6 or number >= 6)
-    def lin_use_scientific(number):return (number <= -(10**6) or number >= (10**6))
-
-    def setup_ticks(axis):
+    def setup_ticks(axis): #TODO limit sig figures in tick_locs before re-assigning instead of in format ticks
         if   axis == 'x': idx = 0
         elif axis == 'y': idx = 1
         elif axis == 'z': idx = 2
@@ -161,5 +171,7 @@ if __name__ == "__main__":
         switch_meas_plot((current_index) % len(meas_lists_names))
     button = plt.Button(plt.axes([0.8, 0.05, 0.1, 0.075]), 'Switch')
     button.on_clicked(on_button_click)
+
+    #TODO xy sliders (can they snap between given values) and display z value, plot lines in a different color and plot that correspond with grid lines
 
     plt.show()
