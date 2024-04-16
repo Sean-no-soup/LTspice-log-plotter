@@ -82,6 +82,7 @@ if __name__ == "__main__":
     xscale = 'log'
     yscale = 'linear'
     zscale = 'linear'
+
     #when to use scientific vs positional representation for readability
     def log_use_scientific(number):   return (number <= -4 or number >= 6)
     def lin_use_scientific(number):   return (number <= -(10**6) or number >= (10**6))
@@ -145,7 +146,7 @@ if __name__ == "__main__":
     setup_ticks('z')
 
     wireframe.remove()  # Reset wireframe, for some reason it plots smaller the first time ¯\_(ツ)_/¯
-    wireframe = ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale))
+    wireframe = ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale) ,label=meas_lists_names[0])
 
     # Function to update which meas data is shown
     def switch_meas_plot(new_index):
@@ -153,7 +154,7 @@ if __name__ == "__main__":
         z = np.array(meas_lists[new_index])
 
         wireframe.remove()  # Remove old wireframe
-        wireframe = ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale)) # Create new wireframe
+        wireframe = ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale), label=meas_lists_names[new_index]) # Create new wireframe
 
         ax.set_zlabel(meas_lists_names[new_index])
 
@@ -161,17 +162,48 @@ if __name__ == "__main__":
         setup_ticks('z')
 
         plt.draw()
+        ax.legend()
 
-    # Add a button to cycle between datasets
+    # Add buttons to cycle between datasets
     global current_index
     current_index = 0
-    def on_button_click(event):
+
+    def on_cycle_next(event):
         global current_index
         current_index += 1
         switch_meas_plot((current_index) % len(meas_lists_names))
-    button = plt.Button(plt.axes([0.8, 0.05, 0.1, 0.075]), 'Switch')
-    button.on_clicked(on_button_click)
+    button_next = plt.Button(plt.axes([0.8, 0.075, 0.1, 0.075]), 'Next')
+    button_next.on_clicked(on_cycle_next)
 
+    def on_cycle_prev(event):
+        global current_index
+        current_index -= 1
+        switch_meas_plot((current_index) % len(meas_lists_names))
+    button_prev = plt.Button(plt.axes([0.9, 0.075, 0.1, 0.075]), 'Prev')
+    button_prev.on_clicked(on_cycle_prev)
+
+    #add buttons to keep a copy of the current wireframe, or clear the copies
+    global temp_wireframes
+    temp_wireframes = []
+
+    def on_keep_wireframe(event):
+        global z, temp_wireframes
+        temp_wireframes.append(ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale), color = np.random.rand(3,), label=meas_lists_names[current_index]))
+        plt.draw()
+        ax.legend()
+    button_keep = plt.Button(plt.axes([0.8, 0.00, 0.1, 0.075]), 'Keep')
+    button_keep.on_clicked(on_keep_wireframe)
+
+    def on_clear_wireframes(event):
+        global temp_wireframes
+        for frame in temp_wireframes:
+            frame.remove()  # Remove old wireframe
+        temp_wireframes = [] #remove doesn't get rid of the pointers
+        plt.draw()
+        ax.legend()
+    button_clear = plt.Button(plt.axes([0.9, 0.00, 0.1, 0.075]), 'Clear')
+    button_clear.on_clicked(on_clear_wireframes)
+    
     #TODO xy sliders (can they snap between given values) and display z value, plot lines in a different color and plot that correspond with grid lines
 
     plt.show()
