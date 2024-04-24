@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoLocator
@@ -70,13 +69,16 @@ if __name__ == "__main__":
         else:print("No file selected.")
         return file_path
     logfilepath = open_file_dialog()
-
+    
+    from os import path as os_path
+    logfilename = os_path.basename(logfilepath) #works on linux?
+    
     #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     #setup some plot stuff
     fig = plt.figure(figsize=(16, 12), dpi=80)
     ax = plt.axes(projection='3d')
-    ax.set_proj_type('ortho')  #persp, ortho (iso), 
-    ax.set_title('generic toad')
+    ax.set_proj_type('ortho')  #persp, ortho (iso),
+    ax.set_title(logfilename)
     plt.subplots_adjust(bottom=0)
     #linear or log, matplotlib axis scale workaround (and it's been a known issue in 3d for 13+years)
     xscale = 'log'
@@ -197,13 +199,13 @@ if __name__ == "__main__":
     def on_clear_wireframes(event):
         global temp_wireframes
         for frame in temp_wireframes:
-            frame.remove()  # Remove old wireframe
-        temp_wireframes = [] #remove doesn't get rid of the pointers
+            frame.remove()  # Remove old wireframe from plot
+        temp_wireframes = [] #Remove pointers to nothing
         plt.draw()
         ax.legend()
     button_clear = plt.Button(plt.axes([0.9, 0.00, 0.1, 0.075]), 'Clear')
     button_clear.on_clicked(on_clear_wireframes)
     
-    #TODO xy sliders (can they snap between given values) and display z value, plot lines in a different color and plot that correspond with grid lines
+    #TODO xy sliders (can they snap between given the datapoints?) and display z value for each mesh, plot visibility lines on xy plane? or in each wireframe?
 
     plt.show()
