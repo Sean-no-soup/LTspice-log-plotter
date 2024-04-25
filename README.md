@@ -1,6 +1,6 @@
 I collection of python scripts for plotting/extracting data from LTSpice log files. I left a few examples for context
 
-basic use:
+basic use from the same directory:
 ```
 from parse_ltspice_log import *
 logfilename, meas_lists, meas_lists_names, step_lists, step_lists_names = lts_log_Parser(2, returnFileName=True)
