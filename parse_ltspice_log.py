@@ -1,28 +1,57 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoLocator
+from os import path as os_path
+from tkinter import filedialog
 
-def log_parser(fname):
-    """ A generator function that runs log_parse_line line by line"""
-    global current_meas_list, meas_lists, meas_lists_names, step_lists, step_lists_names
-    step_lists_names = []      # Initialize a list to hold step'd parameter names
-    step_lists = []      # Initialize a list to hold lists of step'd parameter values (independent)
-    current_meas_list = []    # Initialize a list to hold current .meas values
-    meas_lists_names = [] # Initialize a list to hold names of .meas lists
-    meas_lists = []       # Initialize a list to hold all .meas lists ( dependent, yay 5*5000 array)
+def open_file_dialog():
+    file_path = filedialog.askopenfilename(filetypes=[("Log files", "*.log")])
+    if file_path:print("Selected file:", file_path)
+    else:print("No file selected.")
+    return file_path
+
+#make a class to keep track of the data? TODO
+def lts_log_Parser(numSteps=-1, logFilePath = '', returnFileName=False, returnFilePath=False,):
+    '''parse an LTSpice Log file line by line for step and meas data. all parameters are optional
+    
+    numSteps: specify how many step'd parameters are expected
+    logFilePath: if not given will open a dialog 
+
+    returns fileName, filepath, meas_lists, meas_lists_names, step_lists, step_lists_names
+    '''
+    
+    if logFilePath == '': logFilePath = open_file_dialog()   #if no file path is given
+    logFileName = os_path.basename(logFilePath)
+    
+    meas_lists, meas_lists_names, step_lists, step_lists_names = log_parser_helper(logFilePath)
+    
+    #check number of step'd parameters
+    if (numSteps > 0) and len(step_lists_names) != numSteps:raise AttributeError(f'encountered {len(step_lists_names)} sted\'ed parameters in log file, was expecting {numSteps}')
+
+    #TODO handle returning name and path
+    if returnFileName: return logFileName, meas_lists, meas_lists_names, step_lists, step_lists_names
+    return meas_lists, meas_lists_names, step_lists, step_lists_names
+
+
+
+def log_parser_helper(fname):
+    """ A generator function that runs log_parse_line, line by line, 
+    return meas_lists, meas_lists_names, step_lists, step_lists_names"""
+    
+    step_lists_names = []   # Initialize a list to hold step'd parameter names
+    step_lists = []         # Initialize a list to hold lists of step'd parameter values (independent)
+    current_meas_list = []  # Initialize a list to hold current .meas values
+    meas_lists_names = []   # Initialize a list to hold names of .meas lists
+    meas_lists = []         # Initialize a list to hold all .meas lists ( dependent, yay 5*5000 array)
     
     with open(fname, mode='r') as log_file: #generator function
         for line in log_file:
             
-            log_parse_line(line)            #do all the work
+            current_meas_list, meas_lists, meas_lists_names, step_lists, step_lists_names = log_parse_line(line, current_meas_list, meas_lists, meas_lists_names, step_lists, step_lists_names)            #do all the work
         
         if current_meas_list:meas_lists.append(current_meas_list)# append the last list to meas_lists (if it's not empty)
-    
     return meas_lists, meas_lists_names, step_lists, step_lists_names
 
-def log_parse_line(linestr):
+def log_parse_line(linestr, current_meas_list, meas_lists, meas_lists_names, step_lists, step_lists_names):
     """ decide what to do with each line of the log file and append to lists for plotting """
-    global current_meas_list, meas_lists, meas_lists_names, step_lists, step_lists_names
     ###LTspice .meas log format###
     #header            (ignore)    has no  \t characters, start of doc
     #step data         (x y)       starts  ' .step <namex>=<val> <namey>=<val>'            check second (starts with .step), append to x and y lists
@@ -52,160 +81,7 @@ def log_parse_line(linestr):
                 meas_lists.append(current_meas_list)  #copy measurements into storage (makes a list of lists)
                 current_meas_list = []               #reset current_meas_list for the new measurement
 
-        return None
+        return current_meas_list, meas_lists, meas_lists_names, step_lists, step_lists_names
     
-    except (ValueError,IndexError) as e: return None
-
-
-
-
-if __name__ == "__main__":
-
-    #look for a log file
-    from tkinter import filedialog
-    def open_file_dialog():
-        file_path = filedialog.askopenfilename(filetypes=[("Log files", "*.log")])
-        if file_path:print("Selected file:", file_path)
-        else:print("No file selected.")
-        return file_path
-    logfilepath = open_file_dialog()
-    
-    from os import path as os_path
-    logfilename = os_path.basename(logfilepath) #works on linux?
-    
-    #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    #setup some plot stuff
-    fig = plt.figure(figsize=(16, 12), dpi=80)
-    ax = plt.axes(projection='3d')
-    ax.set_proj_type('ortho')  #persp, ortho (iso),
-    ax.set_title(logfilename)
-    plt.subplots_adjust(bottom=0)
-    #linear or log, matplotlib axis scale workaround (and it's been a known issue in 3d for 13+years)
-    xscale = 'log'
-    yscale = 'linear'
-    zscale = 'linear'
-
-    #when to use scientific vs positional representation for readability
-    def log_use_scientific(number):   return (number <= -4 or number >= 6)
-    def lin_use_scientific(number):   return (number <= -(10**6) or number >= (10**6))
-
-    #scientific representations
-    def log_format_scientific(number):
-        return np.format_float_scientific(10**number,precision=1,unique=True,trim='-',sign=False)
-    def lin_format_scientific(number):
-        return np.format_float_scientific(    number,precision=1,unique=True,trim='-',sign=False)
-
-    #positional representations 
-    def log_format_positional(number):
-        number = np.float64(np.format_float_scientific(10**number,precision=2)) #limiting sig figures to 3 rather than using precision (which just clips decimal places)
-        return np.format_float_positional(number,unique=True,trim='-',sign=False)
-    def lin_format_positional(number):
-        number = np.float64(np.format_float_scientific(    number,precision=2)) #limiting sig figures to 3 rather than using precision (which just clips decimal places)
-        return np.format_float_positional(number,unique=True,trim='-',sign=False)
-    #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    def setup_grid(dataset,scale):
-        if scale == 'log':return np.log10(dataset).reshape(xy_shape)
-        elif scale == 'linear':return dataset.reshape(xy_shape)
-        else: raise ValueError(f'invalid scale {scale}')
-
-    def setup_ticks(axis): #TODO limit sig figures in tick_locs before re-assigning instead of in format ticks
-        if   axis == 'x': idx = 0
-        elif axis == 'y': idx = 1
-        elif axis == 'z': idx = 2
-        else: raise ValueError(f'invalid axis {axis}')
-        scale = [xscale,yscale,zscale][idx]
-
-        #reset ticks to automatic scaling
-        getattr(ax, f'{axis}axis').set_major_locator(AutoLocator())
-
-        #get the values as plotted (usually have good spacing)
-        tick_locs = getattr(ax, f'get_{axis}ticks')()
-
-        #fix workaround and put in float/scientific
-        if scale == 'log':     tick_labels = [(log_format_scientific(loc) if log_use_scientific(loc) else log_format_positional(loc)) for loc in tick_locs]
-        elif scale == 'linear':tick_labels = [(lin_format_scientific(loc) if lin_use_scientific(loc) else lin_format_positional(loc)) for loc in tick_locs]
-        else: raise ValueError(f'invalid scale {scale}')
-
-        #reset tick labels
-        getattr(ax, f'set_{axis}ticks')(tick_locs) #makes matplotlib happy
-        getattr(ax, f'set_{axis}ticklabels')(tick_labels)#,rotation=10)
-
-    global meas_lists, meas_lists_names, step_lists, step_lists_names
-    log_parser(logfilepath)
-    x = np.array(step_lists[0])# Convert data to numpy array
-    y = np.array(step_lists[1])# Convert data to numpy array
-    z = np.array(meas_lists[0])# Convert data to numpy array, init with index 0
-    xy_shape = (len(set(y)), len(set(x))) #number of unique elements in x and y axis
-
-    wireframe = ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale))
-
-    ax.set_xlabel(step_lists_names[0])
-    ax.set_ylabel(step_lists_names[1])
-    ax.set_zlabel(meas_lists_names[0])
-    setup_ticks('x')
-    setup_ticks('y')
-    setup_ticks('z')
-
-    wireframe.remove()  # Reset wireframe, for some reason it plots smaller the first time ¯\_(ツ)_/¯
-    wireframe = ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale) ,label=meas_lists_names[0])
-
-    # Function to update which meas data is shown
-    def switch_meas_plot(new_index):
-        global z, wireframe
-        z = np.array(meas_lists[new_index])
-
-        wireframe.remove()  # Remove old wireframe
-        wireframe = ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale), label=meas_lists_names[new_index]) # Create new wireframe
-
-        ax.set_zlabel(meas_lists_names[new_index])
-
-        #ax.zaxis.set_major_locator(AutoLocator())
-        setup_ticks('z')
-
-        plt.draw()
-        ax.legend()
-
-    # Add buttons to cycle between datasets
-    global current_index
-    current_index = 0
-
-    def on_cycle_next(event):
-        global current_index
-        current_index += 1
-        switch_meas_plot((current_index) % len(meas_lists_names))
-    button_next = plt.Button(plt.axes([0.8, 0.075, 0.1, 0.075]), 'Next')
-    button_next.on_clicked(on_cycle_next)
-
-    def on_cycle_prev(event):
-        global current_index
-        current_index -= 1
-        switch_meas_plot((current_index) % len(meas_lists_names))
-    button_prev = plt.Button(plt.axes([0.9, 0.075, 0.1, 0.075]), 'Prev')
-    button_prev.on_clicked(on_cycle_prev)
-
-    #add buttons to keep a copy of the current wireframe, or clear the copies
-    global temp_wireframes
-    temp_wireframes = []
-
-    def on_keep_wireframe(event):
-        global z, temp_wireframes
-        temp_wireframes.append(ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale), color = np.random.rand(3,), label=meas_lists_names[current_index]))
-        plt.draw()
-        ax.legend()
-    button_keep = plt.Button(plt.axes([0.8, 0.00, 0.1, 0.075]), 'Keep')
-    button_keep.on_clicked(on_keep_wireframe)
-
-    def on_clear_wireframes(event):
-        global temp_wireframes
-        for frame in temp_wireframes:
-            frame.remove()  # Remove old wireframe from plot
-        temp_wireframes = [] #Remove pointers to nothing
-        plt.draw()
-        ax.legend()
-    button_clear = plt.Button(plt.axes([0.9, 0.00, 0.1, 0.075]), 'Clear')
-    button_clear.on_clicked(on_clear_wireframes)
-    
-    #TODO xy sliders (can they snap between given the datapoints?) and display z value for each mesh, plot visibility lines on xy plane? or in each wireframe?
-
-    plt.show()
+    #no data recorded
+    except (ValueError,IndexError) as e: return current_meas_list, meas_lists, meas_lists_names, step_lists, step_lists_names
