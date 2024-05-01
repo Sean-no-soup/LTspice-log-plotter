@@ -9,6 +9,7 @@ lol this is so unfinished but I want to go to sleep
 #TODO check num steps
 
 #convert to table friendly format, these can usually be graphed no problem
+#find table to heatmap script too
 wb = Workbook()
 ws = wb.active
 #[[ , , , ],\ lines up with cells in spreadsheet
