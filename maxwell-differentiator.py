@@ -60,8 +60,8 @@ if __name__ == "__main__":
     meas_lists = []         # Initialize a list to hold all .meas lists ( dependent, yay 5*5000 array)
     """
     #making data the same format
-    stepz = [z_linspace]*len(t_linspace)
-    stept = [t_linspace]*len(z_linspace)
+    stepz = (np.array([z_linspace]*len(t_linspace))).flatten()
+    stept = (np.array([t_linspace]*len(z_linspace))).flatten()
     stept.sort()
 
     measEz = Ez*len(t_linspace)
@@ -71,17 +71,14 @@ if __name__ == "__main__":
     measEzt = np.outer(Ez, Et).flatten()
 
     meas_lists          = [[measEz],[measEt],[measEzt]]
-    meas_lists_names    = ['Et','Ez','Ezt']
+    meas_lists_names    = ['Ez','Et','Ezt']
     step_lists          = [stepz,stept]
     step_lists_names    = ['z','t']
-
-
     
     x = np.array(step_lists[0])# Convert data to numpy array
     y = np.array(step_lists[1])# Convert data to numpy array
     z = np.array(meas_lists[0])# Convert data to numpy array, init with index 0
     xy_shape = (len(set(y)), len(set(x))) #number of unique elements in x and y axis
-
 
     from matplotlib.ticker import AutoLocator
 
@@ -91,7 +88,7 @@ if __name__ == "__main__":
     ax = plt.axes(projection='3d')
     ax.set_proj_type('ortho')  #persp, ortho
     plt.subplots_adjust(bottom=0)
-    ax.set_title(logfilename)
+    ax.set_title('electrodynamics 2')
 
     #linear or log, matplotlib axis scale workaround (and it's been a known issue in 3d for 13+years)
     xscale = 'linear'
@@ -202,7 +199,7 @@ if __name__ == "__main__":
 
     def on_keep_wireframe(event):
         global z, temp_wireframes
-        print(current_index)
+        #print(current_index)
         temp_wireframes.append(ax.plot_wireframe(setup_grid(x,xscale), setup_grid(y,yscale), setup_grid(z,zscale),\
             color = np.random.rand(3,), label=meas_lists_names[current_index]))
         plt.draw()
