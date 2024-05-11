@@ -1,9 +1,15 @@
 I collection of python scripts for plotting/extracting data from LTSpice log files. I left a few examples for context
 
-basic use from the same directory:
+to plot in 3d against 2 step'ed parameters open *plot3d_2step.py*, change the axis scales (search xscale), and run
+
+to get a table (spreadsheet) of step and meas data run maketable.py
+
+any other formats are likely to be left out as LTSpice already does a good job plotting these
+
+basic use to get data:
 ```
 from parse_ltspice_log import *
-logfilename, meas_lists, meas_lists_names, step_lists, step_lists_names = lts_log_Parser(2, returnFileName=True)
+logfilename, meas_lists, meas_lists_names, step_lists, step_lists_names = lts_log_Parser()
 ```
 logfilename: string
 
