@@ -1,4 +1,4 @@
-I collection of python scripts for plotting/extracting data from LTSpice log files. I left a few examples for context
+A collection of python scripts for plotting/extracting data from LTSpice log files. I left a few examples for context
 
 to plot in 3d against 2 step'ed parameters open *plot3d_2step.py*, change the axis scales (search xscale), and run
 
